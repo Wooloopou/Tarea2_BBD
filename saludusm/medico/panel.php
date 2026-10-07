@@ -2,9 +2,14 @@
 
 session_start();
 
-if (!isset($_SESSION["id_usuario"]) || $_SESSION["rol"] !== "Medico") {
+if (
+    !isset($_SESSION["id_usuario"]) ||
+    $_SESSION["rol"] !== "Medico"
+) {
+
     header("Location: ../login.php");
     exit();
+
 }
 
 ?>
@@ -13,45 +18,101 @@ if (!isset($_SESSION["id_usuario"]) || $_SESSION["rol"] !== "Medico") {
 <html lang="es">
 
 <head>
+
     <meta charset="UTF-8">
+
     <title>Panel del Médico - SaludUSM</title>
+
 </head>
 
 <body>
 
-    <h1>SaludUSM</h1>
+<h1>SaludUSM</h1>
 
-    <h2>Panel del Médico</h2>
+<h2>Panel del Médico</h2>
 
-    <p>
-        Bienvenido,
-        <strong><?php echo htmlspecialchars($_SESSION["usuario"]); ?></strong>
-    </p>
+<p>
 
-    <hr>
+    Bienvenido,
 
-    <h3>Opciones</h3>
+    <strong>
+        <?php echo htmlspecialchars($_SESSION["usuario"]); ?>
+    </strong>
 
-    <ul>
-        <li>
-            <a href="agenda.php">Mi agenda</a>
-        </li>
+</p>
 
-        <li>
-            <a href="agenda.php">Gestionar estado de citas</a>
-        </li>
 
-        <li>
-            <a href="registrar_atencion.php">Registrar atención</a>
-        </li>
-        <li>
-            <a href="mis_datos.php">Mis datos personales</a>
-        </li>
-    </ul>
+<hr>
 
-    <br>
 
-    <a href="../logout.php">Cerrar sesión</a>
+<h3>Opciones</h3>
+
+
+<table border="1">
+
+    <tr>
+
+        <th>Función</th>
+
+        <th>Acceso</th>
+
+    </tr>
+
+
+    <tr>
+
+        <td>Buscar médicos</td>
+
+        <td>
+
+            <a href="../Pag_principal.php">
+                Ir
+            </a>
+
+        </td>
+
+    </tr>
+
+
+    <tr>
+
+        <td>Mi agenda</td>
+
+        <td>
+
+            <a href="agenda.php">
+                Ir
+            </a>
+
+        </td>
+
+    </tr>
+
+
+    <tr>
+
+        <td>Registrar atención</td>
+
+        <td>
+
+            <a href="agenda.php">
+                Ir desde agenda
+            </a>
+
+        </td>
+
+    </tr>
+
+</table>
+
+
+<br>
+
+
+<a href="../logout.php">
+    Cerrar sesión
+</a>
+
 
 </body>
 

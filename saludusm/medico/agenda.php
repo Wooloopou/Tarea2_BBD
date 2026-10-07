@@ -1,81 +1,88 @@
 <?php
 
 session_start();
+
 require_once "../conexion.php";
 
-if (!isset($_SESSION["id_usuario"]) || $_SESSION["rol"] !== "Medico") {
+
+if (
+    !isset($_SESSION["id_usuario"]) ||
+    $_SESSION["rol"] !== "Medico"
+) {
+
     header("Location: ../login.php");
     exit();
+
 }
+
 
 $rut_medico = $_SESSION["rut_medico"];
-$mensaje = "";
 
 
-/* =========================
-   ACTUALIZAR ESTADO
-   ========================= */
+/*
+ * Si no se selecciona una fecha,
+ * se utiliza el día actual.
+ */
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-
-    $id_cita = intval($_POST["id_cita"]);
-    $nuevo_estado = intval($_POST["estado"]);
-
-    /*
-     * El médico solamente puede modificar
-     * sus propias citas.
-     */
-    $sql = "UPDATE Cita
-            SET Estado_cita = ?
-            WHERE Id_cita = ?
-            AND Rut_medico = ?";
-
-    $stmt = $conexion->prepare($sql);
-
-    $stmt->bind_param(
-        "iis",
-        $nuevo_estado,
-        $id_cita,
-        $rut_medico
-    );
-
-    if ($stmt->execute() && $stmt->affected_rows > 0) {
-        $mensaje = "Estado de la cita actualizado correctamente.";
-    } else {
-        $mensaje = "No fue posible actualizar la cita.";
-    }
-}
+$fecha = isset($_GET["fecha"])
+    ? $_GET["fecha"]
+    : date("Y-m-d");
 
 
-/* =========================
-   OBTENER AGENDA
-   ========================= */
+/* ======================================
+   OBTENER CITAS DEL MÉDICO
+   ====================================== */
 
-$sql = "SELECT
-            c.Id_cita,
-            c.Fecha_hora,
-            p.Nombre_completo AS Paciente,
-            e.Tipo_especialidad AS Especialidad,
-            cm.Nombre AS Centro,
-            ec.Id_estado,
-            ec.Descripcion AS Estado
-        FROM Cita c
-        INNER JOIN Paciente p
-            ON c.Rut_paciente = p.Rut_paciente
-        INNER JOIN Especialidad e
-            ON c.Id_especialidad = e.Id_especialidad
-        INNER JOIN Centro_medico cm
-            ON c.Codigo_centro = cm.Codigo_interno
-        INNER JOIN Estado_cita ec
-            ON c.Estado_cita = ec.Id_estado
-        WHERE c.Rut_medico = ?
-        ORDER BY c.Fecha_hora ASC";
+$sql = "
+
+    SELECT
+
+        c.Id_cita,
+
+        TIME(c.Fecha_hora) AS Hora,
+
+        p.Nombre_completo AS Paciente,
+
+        ps.Descripcion AS Prevision,
+
+        cm.Nombre AS Centro,
+
+        ec.Descripcion AS Estado
+
+    FROM Cita c
+
+    JOIN Paciente p
+        ON c.Rut_paciente = p.Rut_paciente
+
+    JOIN Prevision_Salud ps
+        ON p.Id_prevision = ps.Id_prevision
+
+    JOIN Centro_medico cm
+        ON c.Codigo_centro = cm.Codigo_interno
+
+    JOIN Estado_cita ec
+        ON c.Estado_cita = ec.Id_estado
+
+    WHERE c.Rut_medico = ?
+
+      AND DATE(c.Fecha_hora) = ?
+
+    ORDER BY c.Fecha_hora ASC
+
+";
+
 
 $stmt = $conexion->prepare($sql);
-$stmt->bind_param("s", $rut_medico);
+
+$stmt->bind_param(
+    "ss",
+    $rut_medico,
+    $fecha
+);
+
 $stmt->execute();
 
-$agenda = $stmt->get_result();
+$resultado = $stmt->get_result();
 
 ?>
 
@@ -86,7 +93,7 @@ $agenda = $stmt->get_result();
 
     <meta charset="UTF-8">
 
-    <title>Mi agenda - SaludUSM</title>
+    <title>Agenda médica - SaludUSM</title>
 
 </head>
 
@@ -94,145 +101,189 @@ $agenda = $stmt->get_result();
 
 <h1>SaludUSM</h1>
 
-<h2>Mi agenda</h2>
-
-<?php if (!empty($mensaje)): ?>
-
-    <p>
-        <strong>
-            <?php echo htmlspecialchars($mensaje); ?>
-        </strong>
-    </p>
-
-<?php endif; ?>
+<h2>Agenda del médico</h2>
 
 
-<?php if ($agenda->num_rows === 0): ?>
+<p>
 
-    <p>No tiene citas registradas.</p>
+    Médico:
 
-<?php else: ?>
+    <strong>
+        <?php echo htmlspecialchars($_SESSION["usuario"]); ?>
+    </strong>
 
-<table border="1" cellpadding="8">
+</p>
+
+
+<form method="GET">
+
+    <label>
+
+        Seleccione el día:
+
+    </label>
+
+
+    <input
+        type="date"
+        name="fecha"
+        value="<?php echo htmlspecialchars($fecha); ?>"
+        required
+    >
+
+
+    <button type="submit">
+
+        Ver agenda
+
+    </button>
+
+</form>
+
+
+<br>
+
+
+<h3>
+    Citas del <?php echo htmlspecialchars($fecha); ?>
+</h3>
+
+
+<table border="1">
 
     <tr>
 
-        <th>ID</th>
-        <th>Fecha y hora</th>
+        <th>Hora</th>
+
         <th>Paciente</th>
-        <th>Especialidad</th>
+
+        <th>Previsión</th>
+
         <th>Centro</th>
+
         <th>Estado</th>
-        <th>Actualizar estado</th>
+
+        <th>Atención</th>
 
     </tr>
 
 
-    <?php while ($cita = $agenda->fetch_assoc()): ?>
+    <?php if ($resultado->num_rows > 0): ?>
+
+
+        <?php while ($fila = $resultado->fetch_assoc()): ?>
+
+
+            <tr>
+
+                <td>
+
+                    <?php
+                    echo htmlspecialchars(
+                        $fila["Hora"]
+                    );
+                    ?>
+
+                </td>
+
+
+                <td>
+
+                    <?php
+                    echo htmlspecialchars(
+                        $fila["Paciente"]
+                    );
+                    ?>
+
+                </td>
+
+
+                <td>
+
+                    <?php
+                    echo htmlspecialchars(
+                        $fila["Prevision"]
+                    );
+                    ?>
+
+                </td>
+
+
+                <td>
+
+                    <?php
+                    echo htmlspecialchars(
+                        $fila["Centro"]
+                    );
+                    ?>
+
+                </td>
+
+
+                <td>
+
+                    <?php
+                    echo htmlspecialchars(
+                        $fila["Estado"]
+                    );
+                    ?>
+
+                </td>
+
+
+                <td>
+
+                    <a
+                        href="registrar_atencion.php?id_cita=<?php echo $fila["Id_cita"]; ?>"
+                    >
+
+                        Registrar atención
+
+                    </a>
+
+                </td>
+
+            </tr>
+
+
+        <?php endwhile; ?>
+
+
+    <?php else: ?>
+
 
         <tr>
 
-            <td>
-                <?php echo $cita["Id_cita"]; ?>
-            </td>
+            <td colspan="6">
 
-            <td>
-                <?php echo htmlspecialchars($cita["Fecha_hora"]); ?>
-            </td>
-
-            <td>
-                <?php echo htmlspecialchars($cita["Paciente"]); ?>
-            </td>
-
-            <td>
-                <?php echo htmlspecialchars($cita["Especialidad"]); ?>
-            </td>
-
-            <td>
-                <?php echo htmlspecialchars($cita["Centro"]); ?>
-            </td>
-
-            <td>
-                <?php echo htmlspecialchars($cita["Estado"]); ?>
-            </td>
-
-            <td>
-
-                <form method="POST">
-
-                    <input
-                        type="hidden"
-                        name="id_cita"
-                        value="<?php echo $cita["Id_cita"]; ?>"
-                    >
-
-                    <select name="estado">
-
-                        <option
-                            value="1"
-                            <?php if ($cita["Id_estado"] == 1) echo "selected"; ?>
-                        >
-                            Reservada
-                        </option>
-
-                        <option
-                            value="2"
-                            <?php if ($cita["Id_estado"] == 2) echo "selected"; ?>
-                        >
-                            Confirmada
-                        </option>
-
-                        <option
-                            value="3"
-                            <?php if ($cita["Id_estado"] == 3) echo "selected"; ?>
-                        >
-                            Atendida
-                        </option>
-
-                        <option
-                            value="4"
-                            <?php if ($cita["Id_estado"] == 4) echo "selected"; ?>
-                        >
-                            No Asistió
-                        </option>
-
-                        <option
-                            value="5"
-                            <?php if ($cita["Id_estado"] == 5) echo "selected"; ?>
-                        >
-                            Cancelada
-                        </option>
-
-                    </select>
-
-                    <button type="submit">
-                        Actualizar
-                    </button>
-
-                </form>
+                No hay citas para este día.
 
             </td>
 
         </tr>
 
-    <?php endwhile; ?>
+
+    <?php endif; ?>
+
 
 </table>
 
-<?php endif; ?>
-
 
 <br>
+
 
 <a href="panel.php">
     Volver al panel
 </a>
 
+
 <br><br>
 
-<a href="../logout.php">
-    Cerrar sesión
+
+<a href="../Pag_principal.php">
+    Página principal
 </a>
+
 
 </body>
 
