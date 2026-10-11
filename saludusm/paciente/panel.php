@@ -90,6 +90,17 @@ if (
 
     </tr>
 
+     <td>Mi historial clinico</td>
+
+        <td>
+            <a href="historial.php">
+                Ir
+            </a>
+        </td>
+
+    </tr>
+
+
 </table>
 
 

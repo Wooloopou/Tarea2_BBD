@@ -88,6 +88,20 @@ if (
 
     </tr>
 
+    <tr>
+
+        <td>Mis datos</td>
+
+        <td>
+
+            <a href="mis_datos.php">
+                Ir
+            </a>
+
+        </td>
+
+    </tr>
+
 
     <tr>
 
@@ -95,8 +109,8 @@ if (
 
         <td>
 
-            <a href="agenda.php">
-                Ir desde agenda
+            <a href="registrar_atencion.php">
+                Ir
             </a>
 
         </td>
